@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
   /* TUT brand: official red + blue scales */
   --color-tut-red-50: #fdecef;

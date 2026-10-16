@@ -6,9 +6,19 @@
   color-scheme: light;
 }
 
+:root.dark {
+  color-scheme: dark;
+}
+
 body {
   margin: 0;
   min-height: 100vh;
   background: #f8fafc;
   color: #0f172a;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+:root.dark body {
+  background: #020617;
+  color: #f8fafc;
 }

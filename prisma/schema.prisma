@@ -9,6 +9,7 @@ datasource db {
 
 enum UserRole {
   STUDENT
+  ADMIN
   TUTOR
   TECHNICIAN
 }
@@ -26,6 +27,7 @@ model User {
   passwordHash  String
   role          UserRole  @default(STUDENT)
   sessions      Session[]
+  bookings      Booking[]
   reports       Report[]
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
@@ -49,6 +51,20 @@ model Session {
 
   venue       Venue     @relation(fields: [venueId], references: [id])
   tutor       User      @relation(fields: [tutorId], references: [id])
+}
+
+model Booking {
+  id          String   @id @default(cuid())
+  userId      String
+  campusId    String
+  campusName  String
+  serviceName String
+  bookingDate String
+  bookingTime String
+  status      String   @default("PENDING")
+  createdAt   DateTime @default(now())
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Report {

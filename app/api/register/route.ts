@@ -2,20 +2,27 @@ import { NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 
 import { prisma } from '@/lib/prisma';
+import { isValidStudentNumber, studentEmailFromNumber } from '@/lib/student-email';
 
 export async function POST(request: Request) {
   const body = await request.json();
-  const { name, email, password, role } = body;
-  const allowedRoles = ['STUDENT', 'ADMIN', 'LAB_MANAGER'];
+  const { name, studentNumber, password } = body;
 
-  if (!email || !password) {
-    return NextResponse.json({ error: 'Email and password are required.' }, { status: 400 });
+  if (
+    typeof name !== 'string' ||
+    !name.trim() ||
+    typeof studentNumber !== 'string' ||
+    !isValidStudentNumber(studentNumber) ||
+    typeof password !== 'string' ||
+    password.length < 6
+  ) {
+    return NextResponse.json(
+      { error: 'Enter your name, a valid student number, and a password of at least 6 characters.' },
+      { status: 400 }
+    );
   }
 
-  if (role && !allowedRoles.includes(role)) {
-    return NextResponse.json({ error: 'Invalid role.' }, { status: 400 });
-  }
-
+  const email = studentEmailFromNumber(studentNumber);
   const existing = await prisma.user.findUnique({
     where: { email },
   });
@@ -28,10 +35,10 @@ export async function POST(request: Request) {
 
   const user = await prisma.user.create({
     data: {
-      name,
+      name: name.trim(),
       email,
       passwordHash,
-      role: role ?? 'STUDENT',
+      role: 'STUDENT',
     },
   });
 

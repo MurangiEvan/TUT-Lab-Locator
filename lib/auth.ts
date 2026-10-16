@@ -3,6 +3,7 @@ import CredentialsProvider from 'next-auth/providers/credentials';
 import bcrypt from 'bcryptjs';
 
 import { prisma } from '@/lib/prisma';
+import { isValidStudentNumber, studentEmailFromNumber } from '@/lib/student-email';
 
 export const authOptions: NextAuthOptions = {
   session: {
@@ -15,21 +16,27 @@ export const authOptions: NextAuthOptions = {
     CredentialsProvider({
       name: 'Credentials',
       credentials: {
-        email: { label: 'Email', type: 'email' },
+        studentNumber: { label: 'Student number', type: 'text' },
         password: { label: 'Password', type: 'password' },
+        role: { label: 'Account type', type: 'text' },
       },
       async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) {
+        if (
+          !credentials?.studentNumber ||
+          !isValidStudentNumber(credentials.studentNumber) ||
+          !credentials.password ||
+          !['STUDENT', 'ADMIN'].includes(credentials.role ?? '')
+        ) {
           return null;
         }
 
         const user = await prisma.user.findUnique({
           where: {
-            email: credentials.email,
+            email: studentEmailFromNumber(credentials.studentNumber),
           },
         });
 
-        if (!user) {
+        if (!user || user.role !== credentials.role) {
           return null;
         }
 

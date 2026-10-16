@@ -2,6 +2,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { Search, ShieldCheck, Sparkles, Clock3, Star, ArrowRight, MonitorCog, MapPin } from 'lucide-react';
 import { campuses, campusProvinces } from '@/lib/campuses';
+import { ThemeToggle } from '@/components/theme-toggle';
 
 export default function HomePage() {
   return (
@@ -23,12 +24,15 @@ export default function HomePage() {
               <p className="text-xs text-white/80">Computer Lab Booking System</p>
             </div>
           </Link>
-          <nav className="hidden items-center gap-6 text-sm font-medium md:flex">
-            <Link href="/labs" className="hover:text-white/80">Campuses</Link>
-            <Link href="/about" className="hover:text-white/80">About</Link>
-            <Link href="/contact" className="hover:text-white/80">Contact</Link>
-            <Link href="/auth/login" className="rounded-full bg-tut-red-600 px-4 py-2 text-white transition hover:bg-tut-red-700">Sign in</Link>
-          </nav>
+          <div className="flex items-center gap-2 sm:gap-4">
+            <ThemeToggle />
+            <nav className="hidden items-center gap-6 text-sm font-medium md:flex">
+              <Link href="/labs" className="hover:text-white/80">Campuses</Link>
+              <Link href="/about" className="hover:text-white/80">About</Link>
+              <Link href="/contact" className="hover:text-white/80">Contact</Link>
+              <Link href="/auth/login" className="rounded-full bg-tut-red-600 px-4 py-2 text-white transition hover:bg-tut-red-700">Sign in</Link>
+            </nav>
+          </div>
         </div>
       </header>
 

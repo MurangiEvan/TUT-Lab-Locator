@@ -10,15 +10,15 @@ const router = Router();
 
 const registerSchema = z.object({
   fullname: z.string().min(2),
-  email: z.string().email(),
+  email: z.string().regex(/^[a-zA-Z0-9.-]+@tut4life\.ac\.za$/i, 'Use your TUT student email address'),
   password: z.string().min(6),
-  role: z.enum(['STUDENT', 'ADMIN', 'LAB_MANAGER']).default('STUDENT'),
   phone: z.string().optional(),
 });
 
 const loginSchema = z.object({
-  email: z.string().email(),
+  email: z.string().regex(/^[a-zA-Z0-9.-]+@tut4life\.ac\.za$/i, 'Use your TUT student email address'),
   password: z.string().min(6),
+  role: z.enum(['STUDENT', 'ADMIN']).default('STUDENT'),
 });
 
 const signToken = (user: { id: string; role: string; email: string }) => {
@@ -42,12 +42,13 @@ const setAuthCookie = (res: any, token: string) => {
 router.post('/register', async (req, res, next) => {
   try {
     const body = registerSchema.parse(req.body);
-    const exists = await prisma.user.findUnique({ where: { email: body.email } });
+    const email = body.email.toLowerCase();
+    const exists = await prisma.user.findUnique({ where: { email } });
     if (exists) throw new HttpError(409, 'User already exists');
 
     const password = await bcrypt.hash(body.password, 10);
     const user = await prisma.user.create({
-      data: { fullname: body.fullname, email: body.email, password, role: body.role, phone: body.phone ?? null },
+      data: { fullname: body.fullname, email, password, role: 'STUDENT', phone: body.phone ?? null },
     });
 
     const token = signToken({ id: user.id, role: user.role, email: user.email });
@@ -62,11 +63,14 @@ router.post('/register', async (req, res, next) => {
 router.post('/login', async (req, res, next) => {
   try {
     const body = loginSchema.parse(req.body);
-    const user = await prisma.user.findUnique({ where: { email: body.email } });
+    const user = await prisma.user.findUnique({ where: { email: body.email.toLowerCase() } });
     if (!user) throw new HttpError(401, 'Invalid credentials');
 
     const valid = await bcrypt.compare(body.password, user.password);
     if (!valid) throw new HttpError(401, 'Invalid credentials');
+    if (body.role === 'ADMIN' ? user.role !== 'ADMIN' : !['STUDENT', 'USER'].includes(user.role)) {
+      throw new HttpError(401, 'Invalid credentials');
+    }
 
     const token = signToken({ id: user.id, role: user.role, email: user.email });
     setAuthCookie(res, token);
