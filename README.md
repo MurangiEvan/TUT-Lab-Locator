@@ -1,4 +1,4 @@
-# Lab Locator
+# TUT Lab Locator
 
 A production-ready full-stack lab locator experience with a Next.js frontend and an Express + Prisma backend.
 
