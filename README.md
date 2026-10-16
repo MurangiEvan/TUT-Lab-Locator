@@ -50,5 +50,29 @@ from each campus page; their booking requests are listed on `/welcome`.
 
 ## Deployment
 
-- Frontend: deploy to Vercel using the frontend folder.
-- Backend: deploy to Vercel using the backend folder and the provided vercel.json.
+### Full TUT Labs application
+
+GitHub Pages cannot host this application. It only serves static files; this
+project requires a running Next.js server for sign-in, registration, bookings,
+and API routes. If GitHub Pages is configured to publish the repository root,
+GitHub displays this README because there is no static `index.html` there.
+
+Deploy the root application to a Node.js host such as Vercel or Render instead.
+For Vercel, import this repository and set the project root directory to `.`.
+Do not select the `frontend` folder: the current student sign-in and booking
+features are implemented in the root Next.js application.
+
+Before enabling production sign-in and bookings, configure a persistent
+production database. The root Prisma schema currently uses SQLite, which is
+suitable for local development but is not durable on serverless filesystems
+such as Vercel. Use a Node.js host with persistent disk storage, or migrate the
+root Prisma schema to a hosted PostgreSQL database before deploying there.
+Configure `DATABASE_URL`, `NEXTAUTH_URL` (the deployed app's HTTPS URL), and a
+secure `NEXTAUTH_SECRET` in the hosting provider's environment settings. Never
+commit production credentials to this repository.
+
+### Standalone frontend and backend
+
+The separate `frontend` and `backend` folders are additional applications.
+They can be deployed independently using their own environment settings; they
+are not the root app's current authentication and booking backend.
