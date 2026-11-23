@@ -3,7 +3,8 @@ import { notFound } from 'next/navigation';
 import { ExternalLink } from 'lucide-react';
 
 import { CampusForm } from '@/components/admin/campus-form';
-import { newServiceRow } from '@/components/admin/campus-form-values';
+import { newServiceRow, scheduleToRows } from '@/components/admin/campus-form-values';
+import { getCampusSchedule } from '@/lib/schedule';
 import { findCampus } from '@/lib/campuses';
 
 export default async function EditCampusPage({
@@ -56,7 +57,8 @@ export default async function EditCampusPage({
           address: campus.address,
           building: campus.building,
           description: campus.description,
-          hours: campus.hours,
+          schedule: scheduleToRows(getCampusSchedule(campus)),
+          slotMinutes: campus.slotMinutes,
           rating: campus.rating,
           contactEmail: campus.contactEmail,
           contactPhone: campus.contactPhone,

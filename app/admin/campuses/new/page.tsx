@@ -1,7 +1,8 @@
 import Link from 'next/link';
 
 import { CampusForm } from '@/components/admin/campus-form';
-import { newServiceRow } from '@/components/admin/campus-form-values';
+import { newServiceRow, scheduleToRows } from '@/components/admin/campus-form-values';
+import { parseHoursText } from '@/lib/schedule';
 
 export default function NewCampusPage() {
   return (
@@ -21,7 +22,8 @@ export default function NewCampusPage() {
           address: '',
           building: '',
           description: '',
-          hours: 'Mon–Fri 07:00–20:00',
+          schedule: scheduleToRows(parseHoursText('Mon–Fri 08:00–17:00, Sat–Sun closed')!),
+          slotMinutes: 60,
           rating: 0,
           contactEmail: '',
           contactPhone: '',

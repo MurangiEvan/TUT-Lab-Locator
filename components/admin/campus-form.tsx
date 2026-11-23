@@ -4,7 +4,8 @@ import { FormEvent, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowDown, ArrowUp, Plus, Trash2 } from 'lucide-react';
 
-import { newServiceRow, type CampusFormValues, type ServiceRow } from './campus-form-values';
+import { DAY_SHORT, formatSchedule, SLOT_LENGTHS, toMinutes, WEEK_DAYS } from '@/lib/schedule';
+import { newServiceRow, rowsToSchedule, type CampusFormValues, type ScheduleRows, type ServiceRow } from './campus-form-values';
 
 const PROVINCES = ['Gauteng', 'Mpumalanga', 'Limpopo'];
 
@@ -43,6 +44,14 @@ export function CampusForm({ mode, initial }: { mode: 'create' | 'edit'; initial
     setSaved('');
   }
 
+  function setDay(day: number, patch: Partial<ScheduleRows[number]>) {
+    setValues((current) => ({
+      ...current,
+      schedule: { ...current.schedule, [day]: { ...current.schedule[day], ...patch } },
+    }));
+    setSaved('');
+  }
+
   function moveService(index: number, direction: -1 | 1) {
     setValues((current) => {
       const services = [...current.services];
@@ -61,6 +70,7 @@ export function CampusForm({ mode, initial }: { mode: 'create' | 'edit'; initial
 
     const payload = {
       ...values,
+      schedule: rowsToSchedule(values.schedule),
       services: values.services.map(({ name, description, capacity, status }) => ({
         name,
         description,
@@ -178,10 +188,6 @@ export function CampusForm({ mode, initial }: { mode: 'create' | 'edit'; initial
               required
             />
           </label>
-          <label className={`${labelClass} sm:col-span-2`}>
-            Opening hours
-            <input className={inputClass} value={values.hours} onChange={(e) => set('hours', e.target.value)} required />
-          </label>
           <label className={labelClass}>
             Contact email
             <input type="email" className={inputClass} value={values.contactEmail} onChange={(e) => set('contactEmail', e.target.value)} required />
@@ -213,6 +219,94 @@ export function CampusForm({ mode, initial }: { mode: 'create' | 'edit'; initial
             Visible on the public site
           </label>
         </div>
+      </section>
+
+      <section className="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900 sm:p-6">
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <h2 className="text-lg font-semibold">Opening hours &amp; booking slots</h2>
+            <p className="text-sm text-slate-500 dark:text-slate-400">
+              Students can book slots within these hours. Shown publicly as:{' '}
+              <span className="font-medium text-slate-700 dark:text-slate-200">{formatSchedule(rowsToSchedule(values.schedule))}</span>
+            </p>
+          </div>
+          <label className={labelClass}>
+            Slot length
+            <select
+              className={`${inputClass} w-36`}
+              value={values.slotMinutes}
+              onChange={(e) => set('slotMinutes', Number(e.target.value))}
+            >
+              {SLOT_LENGTHS.map((minutes) => (
+                <option key={minutes} value={minutes}>
+                  {minutes < 60 ? `${minutes} minutes` : `${minutes / 60} hour${minutes === 60 ? '' : 's'}`}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+
+        <ul className="mt-4 divide-y divide-slate-100 dark:divide-slate-800">
+          {WEEK_DAYS.map((day) => {
+            const row = values.schedule[day];
+            const invalid = row.isOpen && row.close <= row.open;
+            return (
+              <li key={day} className="flex flex-wrap items-center gap-x-4 gap-y-2 py-2.5">
+                <label className="flex w-28 items-center gap-2 text-sm font-medium">
+                  <input
+                    type="checkbox"
+                    checked={row.isOpen}
+                    onChange={(e) => setDay(day, { isOpen: e.target.checked })}
+                    className="h-4 w-4 accent-tut-red-600"
+                  />
+                  {DAY_SHORT[day]}
+                </label>
+                {row.isOpen ? (
+                  <div className="flex items-center gap-2 text-sm">
+                    <input
+                      type="time"
+                      aria-label={`${DAY_SHORT[day]} opening time`}
+                      value={row.open}
+                      onChange={(e) => setDay(day, { open: e.target.value })}
+                      className="rounded-lg border border-slate-300 bg-white px-2 py-1 dark:border-slate-700 dark:bg-slate-950"
+                      required
+                    />
+                    <span className="text-slate-400">to</span>
+                    <input
+                      type="time"
+                      aria-label={`${DAY_SHORT[day]} closing time`}
+                      value={row.close}
+                      onChange={(e) => setDay(day, { close: e.target.value })}
+                      className="rounded-lg border border-slate-300 bg-white px-2 py-1 dark:border-slate-700 dark:bg-slate-950"
+                      required
+                    />
+                    {invalid ? (
+                      <span className="text-xs text-rose-600">Closing must be after opening</span>
+                    ) : (
+                      <span className="text-xs text-slate-500">
+                        {Math.floor((toMinutes(row.close) - toMinutes(row.open)) / values.slotMinutes)} slots
+                      </span>
+                    )}
+                  </div>
+                ) : (
+                  <span className="text-sm text-slate-400">Closed</span>
+                )}
+              </li>
+            );
+          })}
+        </ul>
+        {[2, 3, 4, 5].some((day) => JSON.stringify(values.schedule[day]) !== JSON.stringify(values.schedule[1])) && (
+          <button
+            type="button"
+            onClick={() => {
+              const monday = values.schedule[1];
+              set('schedule', { ...values.schedule, 2: monday, 3: monday, 4: monday, 5: monday });
+            }}
+            className="mt-2 text-sm font-medium text-tut-blue-700 hover:underline dark:text-tut-blue-200"
+          >
+            Copy Monday&apos;s hours to Tue–Fri
+          </button>
+        )}
       </section>
 
       <section className="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900 sm:p-6">

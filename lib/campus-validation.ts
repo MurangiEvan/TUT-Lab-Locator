@@ -1,4 +1,5 @@
 import { campusProvinces, labStatuses, type LabStatusValue } from '@/lib/campuses';
+import { formatSchedule, normalizeSchedule, SLOT_LENGTHS, WEEK_DAYS } from '@/lib/schedule';
 
 export type ServiceInput = {
   name: string;
@@ -17,6 +18,8 @@ export type CampusInput = {
   building: string;
   description: string;
   hours: string;
+  schedule: string;
+  slotMinutes: number;
   rating: number;
   contactEmail: string;
   contactPhone: string;
@@ -33,7 +36,6 @@ const requiredText = [
   ['address', 'Address'],
   ['building', 'Building'],
   ['description', 'Description'],
-  ['hours', 'Opening hours'],
   ['contactEmail', 'Contact email'],
   ['contactPhone', 'Contact phone'],
 ] as const;
@@ -66,6 +68,19 @@ export function parseCampusInput(body: unknown): { data: CampusInput } | { error
   const province = text(raw.province);
   if (!(campusProvinces as readonly string[]).includes(province)) {
     return { error: `Province must be one of: ${campusProvinces.join(', ')}.` };
+  }
+
+  const schedule = normalizeSchedule(raw.schedule);
+  if (!schedule) {
+    return { error: 'Check the opening hours: each open day needs an opening time before its closing time.' };
+  }
+  if (WEEK_DAYS.every((day) => schedule[day] === null)) {
+    return { error: 'The campus must be open on at least one day.' };
+  }
+
+  const slotMinutes = Number(raw.slotMinutes);
+  if (!(SLOT_LENGTHS as readonly number[]).includes(slotMinutes)) {
+    return { error: `Booking slot length must be one of: ${SLOT_LENGTHS.join(', ')} minutes.` };
   }
 
   const rating = Number(raw.rating);
@@ -113,7 +128,9 @@ export function parseCampusInput(body: unknown): { data: CampusInput } | { error
       address: fields.address,
       building: fields.building,
       description: fields.description,
-      hours: fields.hours,
+      hours: formatSchedule(schedule),
+      schedule: JSON.stringify(schedule),
+      slotMinutes,
       rating: Math.round(rating * 10) / 10,
       contactEmail: fields.contactEmail,
       contactPhone: fields.contactPhone,

@@ -1,9 +1,17 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { ACTIVE_BOOKING_STATUSES, getSlotUsage, todayInSouthAfrica } from '@/lib/bookings';
+import {
+  ACTIVE_BOOKING_STATUSES,
+  BOOKING_WINDOW_DAYS,
+  getSlotUsage,
+  lastBookableDate,
+  timeNowInSouthAfrica,
+  todayInSouthAfrica,
+} from '@/lib/bookings';
 import { findCampus } from '@/lib/campuses';
 import { prisma } from '@/lib/prisma';
+import { getCampusSchedule, slotsForDate } from '@/lib/schedule';
 
 function isValidDate(value: string) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
@@ -64,11 +72,25 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: `${service.name} is not open for bookings right now.` }, { status: 409 });
   }
 
-  if (!isValidDate(bookingDate) || bookingDate < todayInSouthAfrica()) {
+  const today = todayInSouthAfrica();
+  if (!isValidDate(bookingDate) || bookingDate < today) {
     return NextResponse.json({ error: 'Choose a valid date that is not in the past.' }, { status: 400 });
   }
-  if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(bookingTime)) {
-    return NextResponse.json({ error: 'Choose a valid booking time.' }, { status: 400 });
+  if (bookingDate > lastBookableDate()) {
+    return NextResponse.json(
+      { error: `Bookings open ${BOOKING_WINDOW_DAYS} days in advance. Choose an earlier date.` },
+      { status: 400 },
+    );
+  }
+  const slots = slotsForDate(getCampusSchedule(campus), bookingDate, campus.slotMinutes);
+  if (slots.length === 0) {
+    return NextResponse.json({ error: `${campus.name} is closed on that day.` }, { status: 400 });
+  }
+  if (!slots.includes(bookingTime)) {
+    return NextResponse.json({ error: 'Choose one of the available time slots.' }, { status: 400 });
+  }
+  if (bookingDate === today && bookingTime <= timeNowInSouthAfrica()) {
+    return NextResponse.json({ error: 'That time slot has already started. Choose a later one.' }, { status: 400 });
   }
 
   const duplicate = await prisma.booking.findFirst({
@@ -86,7 +108,7 @@ export async function POST(request: Request) {
   }
 
   const usage = await getSlotUsage({ campusId: campus.id, serviceName, bookingDate, bookingTime });
-  if (usage.isFull) {
+  if (usage.requestFull) {
     return NextResponse.json({ error: 'That time slot is fully booked. Please choose another time.' }, { status: 409 });
   }
 

@@ -4,7 +4,9 @@ import { notFound } from 'next/navigation';
 import { ArrowLeft, MapPin, Star } from 'lucide-react';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
+import { lastBookableDate, todayInSouthAfrica } from '@/lib/bookings';
 import { findCampus } from '@/lib/campuses';
+import { formatSchedule, getCampusSchedule, WEEK_DAYS } from '@/lib/schedule';
 import { LabBookingForm } from '@/components/lab-booking-form';
 import { SignOutButton } from '@/components/sign-out-button';
 import { LabStatusBadge } from '@/components/lab-status-badge';
@@ -25,6 +27,12 @@ export default async function CampusDetailPage({
   const bookableServices = campus.services.filter((service) => service.status === 'OPEN').map((service) => service.name);
   const requestedService = Array.isArray(searchParams?.service) ? searchParams.service[0] : searchParams?.service;
   const selectedService = bookableServices.includes(requestedService ?? '') ? requestedService : undefined;
+  const schedule = getCampusSchedule(campus);
+  const scheduleProps = {
+    openDays: WEEK_DAYS.filter((day) => schedule[day] !== null),
+    today: todayInSouthAfrica(),
+    lastDate: lastBookableDate(),
+  };
 
   return (
     <main className="min-h-screen bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100">
@@ -109,6 +117,7 @@ export default async function CampusDetailPage({
             <LabBookingForm
               campusId={campus.id}
               services={bookableServices}
+              {...scheduleProps}
               initialServiceName={selectedService}
             />
           ) : session ? (
@@ -119,12 +128,13 @@ export default async function CampusDetailPage({
             <LabBookingForm
               campusId={campus.id}
               services={bookableServices}
+              {...scheduleProps}
               initialServiceName={selectedService}
               requiresSignIn
             />
           )}
           <p className="mt-4 border-t border-slate-200 pt-4 text-xs text-slate-500 dark:border-slate-800">
-            Campus hours: {campus.hours}
+            Campus hours: {formatSchedule(schedule)} · {campus.slotMinutes}-minute booking slots
           </p>
         </aside>
       </section>

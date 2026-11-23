@@ -34,7 +34,7 @@ export async function PATCH(request: Request, { params }: { params: { id: string
 
   if (status === 'APPROVED') {
     const usage = await getSlotUsage(booking, booking.id);
-    if (usage.isFull) {
+    if (usage.approvalFull) {
       return NextResponse.json(
         { error: `This slot is full: ${usage.approved} of ${usage.capacity} seats are already approved.` },
         { status: 409 },
