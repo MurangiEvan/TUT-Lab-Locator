@@ -27,7 +27,8 @@ model User {
   passwordHash  String
   role          UserRole  @default(STUDENT)
   sessions      Session[]
-  bookings      Booking[]
+  bookings      Booking[] @relation("StudentBookings")
+  reviewedBookings Booking[] @relation("BookingReviewer")
   reports       Report[]
   passwordResetTokens PasswordResetToken[]
   createdAt     DateTime  @default(now())
@@ -118,10 +119,18 @@ model Booking {
   serviceName String
   bookingDate String
   bookingTime String
-  status      String   @default("PENDING")
-  createdAt   DateTime @default(now())
+  // PENDING | APPROVED | REJECTED | CANCELLED (see lib/bookings.ts)
+  status       String    @default("PENDING")
+  adminNote    String?
+  reviewedAt   DateTime?
+  reviewedById String?
+  createdAt    DateTime  @default(now())
 
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user         User      @relation("StudentBookings", fields: [userId], references: [id], onDelete: Cascade)
+  reviewedBy   User?     @relation("BookingReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
+
+  @@index([status])
+  @@index([campusId, serviceName, bookingDate, bookingTime])
 }
 
 model Report {

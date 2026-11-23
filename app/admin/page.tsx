@@ -20,7 +20,7 @@ export default async function AdminDashboardPage() {
     { label: 'Active campuses', value: `${campuses.filter((c) => c.isActive).length} / ${campuses.length}`, icon: Building2 },
     { label: 'Labs open', value: `${openLabs} / ${labs.length}`, icon: MonitorCheck },
     { label: 'In maintenance', value: maintenanceLabs, icon: Wrench },
-    { label: 'Pending bookings', value: pendingBookings, icon: CalendarClock },
+    { label: 'Pending bookings', value: pendingBookings, icon: CalendarClock, href: '/admin/bookings' },
     { label: 'Registered students', value: studentCount, icon: Users },
   ];
 
@@ -49,10 +49,20 @@ export default async function AdminDashboardPage() {
       </div>
 
       <dl className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-        {stats.map(({ label, value, icon: Icon }) => (
-          <div key={label} className="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
+        {stats.map(({ label, value, icon: Icon, href }) => (
+          <div
+            key={label}
+            className="relative rounded-2xl border border-slate-200 bg-white p-4 transition has-[a:hover]:border-tut-red-600 dark:border-slate-800 dark:bg-slate-900"
+          >
             <dt className="flex items-center gap-2 text-xs font-medium text-slate-500 dark:text-slate-400">
-              <Icon className="h-4 w-4 text-tut-blue-600 dark:text-tut-blue-200" aria-hidden="true" /> {label}
+              <Icon className="h-4 w-4 text-tut-blue-600 dark:text-tut-blue-200" aria-hidden="true" />
+              {href ? (
+                <Link href={href} className="after:absolute after:inset-0 hover:underline">
+                  {label}
+                </Link>
+              ) : (
+                label
+              )}
             </dt>
             <dd className="mt-2 text-2xl font-bold tabular-nums">{value}</dd>
           </div>

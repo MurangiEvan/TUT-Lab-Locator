@@ -59,7 +59,7 @@ export function LabBookingForm({
         return;
       }
 
-      setConfirmation('Your booking request has been submitted. You can find it in My bookings.');
+      setConfirmation("Booking request sent. A lab admin will review it and you'll get an email once it's approved. Track it in My bookings.");
       setServiceName(services[0] ?? '');
       setBookingDate(minimumDate);
       setBookingTime('');

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
+import { ACTIVE_BOOKING_STATUSES, getSlotUsage, todayInSouthAfrica } from '@/lib/bookings';
 import { findCampus } from '@/lib/campuses';
 import { prisma } from '@/lib/prisma';
 
@@ -63,12 +64,30 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: `${service.name} is not open for bookings right now.` }, { status: 409 });
   }
 
-  const today = new Date().toISOString().slice(0, 10);
-  if (!isValidDate(bookingDate) || bookingDate < today) {
+  if (!isValidDate(bookingDate) || bookingDate < todayInSouthAfrica()) {
     return NextResponse.json({ error: 'Choose a valid date that is not in the past.' }, { status: 400 });
   }
   if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(bookingTime)) {
     return NextResponse.json({ error: 'Choose a valid booking time.' }, { status: 400 });
+  }
+
+  const duplicate = await prisma.booking.findFirst({
+    where: {
+      userId: session.user.id,
+      campusId: campus.id,
+      serviceName,
+      bookingDate,
+      bookingTime,
+      status: { in: ACTIVE_BOOKING_STATUSES },
+    },
+  });
+  if (duplicate) {
+    return NextResponse.json({ error: 'You already have a booking for this lab at that time.' }, { status: 409 });
+  }
+
+  const usage = await getSlotUsage({ campusId: campus.id, serviceName, bookingDate, bookingTime });
+  if (usage.isFull) {
+    return NextResponse.json({ error: 'That time slot is fully booked. Please choose another time.' }, { status: 409 });
   }
 
   const booking = await prisma.booking.create({

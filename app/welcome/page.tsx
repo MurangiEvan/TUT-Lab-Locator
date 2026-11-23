@@ -4,6 +4,11 @@ import { redirect } from 'next/navigation';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { SignOutButton } from '@/components/sign-out-button';
+import { BookingStatusBadge } from '@/components/booking-status-badge';
+import { CancelBookingButton } from '@/components/cancel-booking-button';
+import { ACTIVE_BOOKING_STATUSES, todayInSouthAfrica } from '@/lib/bookings';
+
+export const dynamic = 'force-dynamic';
 
 export default async function WelcomePage() {
   const session = await getServerSession(authOptions);
@@ -13,6 +18,7 @@ export default async function WelcomePage() {
     where: { userId: session.user.id },
     orderBy: [{ bookingDate: 'asc' }, { bookingTime: 'asc' }],
   });
+  const today = todayInSouthAfrica();
 
   return (
     <main className="min-h-screen bg-slate-50 px-4 py-10 text-slate-900 dark:bg-slate-950 dark:text-slate-100 sm:px-6">
@@ -51,16 +57,24 @@ export default async function WelcomePage() {
             <ul className="mt-5 space-y-3">
               {bookings.map((booking) => (
                 <li key={booking.id} className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-slate-200 p-4 dark:border-slate-800">
-                  <div>
+                  <div className="min-w-0">
                     <h3 className="font-semibold">{booking.campusName}</h3>
                     <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">{booking.serviceName}</p>
                     <p className="mt-1 text-sm text-slate-500">
                       {booking.bookingDate} at {booking.bookingTime}
                     </p>
+                    {booking.adminNote && (
+                      <p className="mt-2 rounded-lg bg-slate-50 px-3 py-2 text-sm text-slate-700 dark:bg-slate-800 dark:text-slate-200">
+                        <span className="font-medium">Note from lab admin:</span> {booking.adminNote}
+                      </p>
+                    )}
                   </div>
-                  <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-800 dark:bg-amber-950/50 dark:text-amber-200">
-                    {booking.status}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <BookingStatusBadge status={booking.status} />
+                    {(ACTIVE_BOOKING_STATUSES as string[]).includes(booking.status) && booking.bookingDate >= today && (
+                      <CancelBookingButton bookingId={booking.id} />
+                    )}
+                  </div>
                 </li>
               ))}
             </ul>

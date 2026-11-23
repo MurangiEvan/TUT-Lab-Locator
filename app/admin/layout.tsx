@@ -1,9 +1,10 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import type { ReactNode } from 'react';
-import { ExternalLink, LayoutDashboard, Plus } from 'lucide-react';
+import { CalendarCheck, ExternalLink, LayoutDashboard, Plus } from 'lucide-react';
 
 import { requireAdminPage } from '@/lib/admin';
+import { prisma } from '@/lib/prisma';
 import { SignOutButton } from '@/components/sign-out-button';
 import { ThemeToggle } from '@/components/theme-toggle';
 
@@ -11,6 +12,7 @@ export const dynamic = 'force-dynamic';
 
 export default async function AdminLayout({ children }: { children: ReactNode }) {
   const session = await requireAdminPage();
+  const pendingCount = await prisma.booking.count({ where: { status: 'PENDING' } });
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100">
@@ -32,6 +34,14 @@ export default async function AdminLayout({ children }: { children: ReactNode })
           <nav className="flex flex-wrap items-center gap-2 text-sm font-medium">
             <Link href="/admin" className="inline-flex items-center gap-1.5 rounded-full px-3 py-2 hover:bg-white/10">
               <LayoutDashboard className="h-4 w-4" aria-hidden="true" /> Dashboard
+            </Link>
+            <Link href="/admin/bookings" className="inline-flex items-center gap-1.5 rounded-full px-3 py-2 hover:bg-white/10">
+              <CalendarCheck className="h-4 w-4" aria-hidden="true" /> Bookings
+              {pendingCount > 0 && (
+                <span className="rounded-full bg-tut-red-600 px-1.5 text-xs font-bold tabular-nums" aria-label={`${pendingCount} pending`}>
+                  {pendingCount}
+                </span>
+              )}
             </Link>
             <Link href="/admin/campuses/new" className="inline-flex items-center gap-1.5 rounded-full px-3 py-2 hover:bg-white/10">
               <Plus className="h-4 w-4" aria-hidden="true" /> Add campus
