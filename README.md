@@ -15,8 +15,17 @@ directory.
 
 ### Root app
 
-From the repository root, run `npm run dev`. The root `.env.local` points Prisma
-at the local SQLite database, while `.env` provides NextAuth settings.
+1. Copy the environment template and fill in a secret
+   (`.env.example` explains every variable):
+   - `cp .env.example .env`
+   - Generate `NEXTAUTH_SECRET` with
+     `node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"`
+2. Create or update the database tables: `npx prisma db push`
+3. Start the app: `npm run dev`
+
+Use `.env` rather than `.env.local`, because the Prisma CLI only reads `.env`.
+Without SMTP settings, password-reset and booking emails are printed to the
+`npm run dev` terminal instead of being sent.
 
 ### Backend
 
