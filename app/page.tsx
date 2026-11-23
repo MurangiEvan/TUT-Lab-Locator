@@ -1,14 +1,14 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { Search, ShieldCheck, Sparkles, Clock3, Star, ArrowRight, MonitorCog, MapPin } from 'lucide-react';
-import { campuses, campusProvinces } from '@/lib/campuses';
+import { campusProvinces, getCampuses } from '@/lib/campuses';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { SignOutButton } from '@/components/sign-out-button';
 
 export default async function HomePage() {
-  const session = await getServerSession(authOptions);
+  const [session, campuses] = await Promise.all([getServerSession(authOptions), getCampuses()]);
 
   return (
     <main className="min-h-screen bg-white text-slate-900 dark:bg-slate-950 dark:text-slate-100">
@@ -33,8 +33,11 @@ export default async function HomePage() {
             <ThemeToggle />
             {session ? (
               <>
-                <Link href="/welcome" className="rounded-full border border-white/50 px-3 py-2 text-sm font-medium text-white transition hover:bg-white/10">
-                  My bookings
+                <Link
+                  href={session.user.role === 'ADMIN' ? '/admin' : '/welcome'}
+                  className="rounded-full border border-white/50 px-3 py-2 text-sm font-medium text-white transition hover:bg-white/10"
+                >
+                  {session.user.role === 'ADMIN' ? 'Admin' : 'My bookings'}
                 </Link>
                 <SignOutButton className="rounded-full bg-tut-red-600 px-3 py-2 text-sm font-medium text-white transition hover:bg-tut-red-700" />
               </>

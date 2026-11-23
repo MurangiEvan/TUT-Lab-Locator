@@ -29,8 +29,65 @@ model User {
   sessions      Session[]
   bookings      Booking[]
   reports       Report[]
+  passwordResetTokens PasswordResetToken[]
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
+}
+
+// One-time password reset links. Only a SHA-256 hash of the token is stored,
+// so a leaked database cannot be used to reset passwords.
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+  userId    String
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+enum LabStatus {
+  OPEN
+  CLOSED
+  MAINTENANCE
+}
+
+// Campus and lab information, managed by admins from /admin.
+model Campus {
+  id           String       @id // URL slug, e.g. "pretoria"
+  name         String
+  shortName    String
+  province     String
+  city         String
+  address      String
+  building     String
+  description  String
+  hours        String
+  rating       Float        @default(0)
+  contactEmail String
+  contactPhone String
+  isActive     Boolean      @default(true)
+  sortOrder    Int          @default(0)
+  services     LabService[]
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+}
+
+model LabService {
+  id          String    @id @default(cuid())
+  campusId    String
+  name        String
+  description String?
+  capacity    Int?
+  status      LabStatus @default(OPEN)
+  sortOrder   Int       @default(0)
+
+  campus      Campus    @relation(fields: [campusId], references: [id], onDelete: Cascade)
+
+  @@unique([campusId, name])
 }
 
 model Venue {

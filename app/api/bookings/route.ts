@@ -54,9 +54,13 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Select a lab, service, date, and time.' }, { status: 400 });
   }
 
-  const campus = findCampus(campusId);
-  if (!campus || !campus.services.some((service) => service.name === serviceName)) {
+  const campus = await findCampus(campusId);
+  const service = campus?.services.find((item) => item.name === serviceName);
+  if (!campus || !service) {
     return NextResponse.json({ error: 'Select a valid campus lab and service.' }, { status: 400 });
+  }
+  if (service.status !== 'OPEN') {
+    return NextResponse.json({ error: `${service.name} is not open for bookings right now.` }, { status: 409 });
   }
 
   const today = new Date().toISOString().slice(0, 10);

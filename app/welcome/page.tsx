@@ -26,6 +26,11 @@ export default async function WelcomePage() {
             </p>
           </div>
           <div className="flex items-center gap-3">
+            {session.user.role === 'ADMIN' && (
+              <Link href="/admin" className="rounded-xl bg-tut-red-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-tut-red-700">
+                Admin dashboard
+              </Link>
+            )}
             <Link href="/" className="rounded-xl bg-tut-blue-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-tut-blue-800">
               Find a lab
             </Link>

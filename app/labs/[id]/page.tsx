@@ -7,6 +7,9 @@ import { authOptions } from '@/lib/auth';
 import { findCampus } from '@/lib/campuses';
 import { LabBookingForm } from '@/components/lab-booking-form';
 import { SignOutButton } from '@/components/sign-out-button';
+import { LabStatusBadge } from '@/components/lab-status-badge';
+
+export const dynamic = 'force-dynamic';
 
 export default async function CampusDetailPage({
   params,
@@ -15,12 +18,13 @@ export default async function CampusDetailPage({
   params: { id: string };
   searchParams?: { service?: string | string[] };
 }) {
-  const campus = findCampus(params.id);
+  const campus = await findCampus(params.id);
   if (!campus) notFound();
 
   const session = await getServerSession(authOptions);
+  const bookableServices = campus.services.filter((service) => service.status === 'OPEN').map((service) => service.name);
   const requestedService = Array.isArray(searchParams?.service) ? searchParams.service[0] : searchParams?.service;
-  const selectedService = campus.services.some((service) => service.name === requestedService) ? requestedService : undefined;
+  const selectedService = bookableServices.includes(requestedService ?? '') ? requestedService : undefined;
 
   return (
     <main className="min-h-screen bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100">
@@ -81,9 +85,15 @@ export default async function CampusDetailPage({
             <h2 className="text-xl font-semibold">Labs and services</h2>
             <ul className="mt-4 space-y-3">
               {campus.services.map((service) => (
-                <li key={service.name} className="rounded-2xl bg-slate-50 p-4 dark:bg-slate-800">
-                  <h3 className="font-medium">{service.name}</h3>
+                <li key={service.id} className="rounded-2xl bg-slate-50 p-4 dark:bg-slate-800">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <h3 className="font-medium">{service.name}</h3>
+                    <LabStatusBadge status={service.status} />
+                  </div>
                   {service.description && <p className="mt-1 text-sm text-slate-500 dark:text-slate-300">{service.description}</p>}
+                  {service.capacity != null && (
+                    <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{service.capacity} workstations</p>
+                  )}
                 </li>
               ))}
             </ul>
@@ -98,7 +108,7 @@ export default async function CampusDetailPage({
           {session?.user.role === 'STUDENT' ? (
             <LabBookingForm
               campusId={campus.id}
-              services={campus.services.map((service) => service.name)}
+              services={bookableServices}
               initialServiceName={selectedService}
             />
           ) : session ? (
@@ -108,7 +118,7 @@ export default async function CampusDetailPage({
           ) : (
             <LabBookingForm
               campusId={campus.id}
-              services={campus.services.map((service) => service.name)}
+              services={bookableServices}
               initialServiceName={selectedService}
               requiresSignIn
             />
