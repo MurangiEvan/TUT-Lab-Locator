@@ -3,7 +3,7 @@ import CredentialsProvider from 'next-auth/providers/credentials';
 import bcrypt from 'bcryptjs';
 
 import { prisma } from '@/lib/prisma';
-import { isValidStudentNumber, studentEmailFromNumber } from '@/lib/student-email';
+import { accountEmailFromIdentifier } from '@/lib/student-email';
 
 export const authOptions: NextAuthOptions = {
   session: {
@@ -23,18 +23,17 @@ export const authOptions: NextAuthOptions = {
       async authorize(credentials) {
         if (
           !credentials?.studentNumber ||
-          !isValidStudentNumber(credentials.studentNumber) ||
           !credentials.password ||
           !['STUDENT', 'ADMIN'].includes(credentials.role ?? '')
         ) {
           return null;
         }
 
-        const user = await prisma.user.findUnique({
-          where: {
-            email: studentEmailFromNumber(credentials.studentNumber),
-          },
-        });
+        // Admins can sign in with an email address such as admin@tut.ac.za.
+        const email = accountEmailFromIdentifier(credentials.studentNumber, credentials.role === 'ADMIN');
+        if (!email) return null;
+
+        const user = await prisma.user.findUnique({ where: { email } });
 
         if (!user || user.role !== credentials.role) {
           return null;

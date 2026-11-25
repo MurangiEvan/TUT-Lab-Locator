@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { FormEvent, useState } from 'react';
 import { MailCheck } from 'lucide-react';
-import { STUDENT_EMAIL_DOMAIN, isValidStudentNumber } from '@/lib/student-email';
+import { ADMIN_EMAIL, STUDENT_EMAIL_DOMAIN, isAdminIdentifier, isEmailAddress, isValidStudentNumber } from '@/lib/student-email';
 
 export default function ForgotPasswordPage() {
   const [studentNumber, setStudentNumber] = useState('');
@@ -15,8 +15,8 @@ export default function ForgotPasswordPage() {
     event.preventDefault();
     setError('');
 
-    if (!isValidStudentNumber(studentNumber)) {
-      setError('Enter a valid student number without spaces or an email address.');
+    if (!isValidStudentNumber(studentNumber) && !isAdminIdentifier(studentNumber)) {
+      setError('Enter a valid student number, or your email address if you are an admin.');
       return;
     }
 
@@ -65,11 +65,11 @@ export default function ForgotPasswordPage() {
         ) : (
           <>
             <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">
-              Enter your student number and we&apos;ll email a reset link to your TUT student email.
+              Enter your student number (or admin email) and we&apos;ll email you a reset link.
             </p>
             <form onSubmit={handleSubmit} className="mt-6 space-y-4">
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-200">
-                Student number
+                Student number or admin email
                 <input
                   autoComplete="username"
                   autoFocus
@@ -79,7 +79,10 @@ export default function ForgotPasswordPage() {
                   required
                 />
                 <span className="mt-1 block text-xs font-normal text-slate-500">
-                  Reset link goes to: {studentNumber.trim() || 'student number'}@{STUDENT_EMAIL_DOMAIN}
+                  Reset link goes to:{' '}
+                  {isAdminIdentifier(studentNumber)
+                    ? (isEmailAddress(studentNumber) ? studentNumber.trim() : ADMIN_EMAIL)
+                    : `${studentNumber.trim() || 'student number'}@${STUDENT_EMAIL_DOMAIN}`}
                 </span>
               </label>
 

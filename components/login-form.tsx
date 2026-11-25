@@ -3,9 +3,8 @@
 import Link from 'next/link';
 import { FormEvent, useEffect, useState } from 'react';
 import { signIn } from 'next-auth/react';
-import { STUDENT_EMAIL_DOMAIN } from '@/lib/student-email';
+import { STUDENT_EMAIL_DOMAIN, isAdminIdentifier } from '@/lib/student-email';
 
-type AccountType = 'STUDENT' | 'ADMIN';
 type BookingSelection = {
   callbackUrl: string;
   campusName: string;
@@ -18,12 +17,13 @@ type CampusOption = {
 };
 
 export function LoginForm({ campuses }: { campuses: CampusOption[] }) {
-  const [accountType, setAccountType] = useState<AccountType>('STUDENT');
   const [studentNumber, setStudentNumber] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [bookingSelection, setBookingSelection] = useState<BookingSelection | null>(null);
+  // The admin signs in with an email address; students use their student number.
+  const isAdminLogin = isAdminIdentifier(studentNumber);
 
   useEffect(() => {
     const callbackUrl = new URLSearchParams(window.location.search).get('callbackUrl');
@@ -43,7 +43,7 @@ export function LoginForm({ campuses }: { campuses: CampusOption[] }) {
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError('');
-    if (accountType === 'STUDENT' && !bookingSelection) {
+    if (!isAdminLogin && !bookingSelection) {
       setError('Choose your campus and lab before signing in to book.');
       return;
     }
@@ -53,16 +53,20 @@ export function LoginForm({ campuses }: { campuses: CampusOption[] }) {
       const result = await signIn('credentials', {
         studentNumber,
         password,
-        role: accountType,
+        role: isAdminLogin ? 'ADMIN' : 'STUDENT',
         redirect: false,
       });
 
       if (result?.error) {
-        setError('The student number or password is incorrect, or this account cannot sign in as the selected role.');
+        setError(
+          isAdminLogin
+            ? 'The email or password is incorrect, or this account is not an admin.'
+            : 'The student number or password is incorrect, or this account cannot sign in as the selected role.',
+        );
         return;
       }
 
-      if (accountType === 'ADMIN') {
+      if (isAdminLogin) {
         window.location.href = '/admin';
         return;
       }
@@ -97,25 +101,8 @@ export function LoginForm({ campuses }: { campuses: CampusOption[] }) {
           Use your TUT student number and account password.
         </p>
 
-        <div className="mt-6 grid grid-cols-2 rounded-xl bg-slate-100 p-1 dark:bg-slate-800" aria-label="Account type">
-          {(['STUDENT', 'ADMIN'] as const).map((type) => (
-            <button
-              key={type}
-              type="button"
-              onClick={() => setAccountType(type)}
-              aria-pressed={accountType === type}
-              className={`rounded-lg px-3 py-2 text-sm font-semibold transition ${
-                accountType === type
-                  ? 'bg-white text-tut-blue-700 shadow dark:bg-slate-700 dark:text-white'
-                  : 'text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white'
-              }`}
-            >
-              {type === 'STUDENT' ? 'Student' : 'Admin'}
-            </button>
-          ))}
-        </div>
 
-        {accountType === 'STUDENT' && !bookingSelection && (
+        {!isAdminLogin && !bookingSelection && (
           <div className="mt-5 rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-200" role="status">
             <p className="font-semibold">Choose your lab before signing in.</p>
             <p className="mt-1">First select a campus location and the lab you want to book.</p>
@@ -124,7 +111,7 @@ export function LoginForm({ campuses }: { campuses: CampusOption[] }) {
             </Link>
           </div>
         )}
-        {accountType === 'STUDENT' && bookingSelection && (
+        {!isAdminLogin && bookingSelection && (
           <p className="mt-5 rounded-xl bg-emerald-50 p-4 text-sm text-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-200" role="status">
             Selected: {bookingSelection.campusName} · {bookingSelection.serviceName}
           </p>
@@ -140,9 +127,11 @@ export function LoginForm({ campuses }: { campuses: CampusOption[] }) {
               onChange={(event) => setStudentNumber(event.target.value)}
               required
             />
-            <span className="mt-1 block text-xs font-normal text-slate-500">
-              Sign-in email: {studentNumber.trim() || 'student number'}@{STUDENT_EMAIL_DOMAIN}
-            </span>
+            {!isAdminLogin && (
+              <span className="mt-1 block text-xs font-normal text-slate-500">
+                Sign-in email: {studentNumber.trim() || 'student number'}@{STUDENT_EMAIL_DOMAIN}
+              </span>
+            )}
           </label>
 
           <label className="block text-sm font-medium text-slate-700 dark:text-slate-200">
@@ -166,10 +155,10 @@ export function LoginForm({ campuses }: { campuses: CampusOption[] }) {
 
           <button
             type="submit"
-            disabled={isSubmitting || (accountType === 'STUDENT' && !bookingSelection)}
+            disabled={isSubmitting || (!isAdminLogin && !bookingSelection)}
             className="w-full rounded-xl bg-tut-red-600 px-4 py-3 font-semibold text-white transition hover:bg-tut-red-700 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {isSubmitting ? 'Signing in...' : `Sign in as ${accountType === 'STUDENT' ? 'student' : 'admin'}`}
+            {isSubmitting ? 'Signing in...' : 'Sign in'}
           </button>
         </form>
 

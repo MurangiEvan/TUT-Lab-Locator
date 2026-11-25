@@ -51,10 +51,15 @@ npm run dev
 The frontend is available at http://localhost:3000 and the API at http://localhost:5000/api.
 
 Student accounts use the student's number as the email prefix, followed by
-`@tut4life.ac.za`. Public registration creates student accounts only. Admin
-accounts must be promoted separately after they register. For the root app,
-run `npm run promote-admin -- <student-number>` from the repository root.
-Admins sign in using their TUT student number. Signed-in students can book labs
+`@tut4life.ac.za`. Public registration creates student accounts only.
+
+There is a single admin account, `admin@tut.ac.za`. It uses the same sign-in
+page as students: entering the admin email instead of a student number goes
+straight to the admin dashboard. To create it in a new database (or reset its
+password), run `npm run create-admin -- admin@tut.ac.za` with `ADMIN_PASSWORD`
+set to the password. The admin reports lab availability (Open / Maintenance /
+Closed) from `/admin` and approves or rejects student booking requests at
+`/admin/bookings`. Signed-in students can book labs
 from each campus page; their booking requests are listed on `/welcome`.
 
 ## Deployment

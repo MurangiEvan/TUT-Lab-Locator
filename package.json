@@ -10,7 +10,7 @@
     "prisma:generate": "prisma generate",
     "prisma:push": "prisma db push",
     "prisma:seed": "prisma db seed",
-    "promote-admin": "node scripts/promote-admin.cjs"
+    "create-admin": "node scripts/create-admin.cjs"
   },
   "dependencies": {
     "@prisma/client": "^6.0.0",

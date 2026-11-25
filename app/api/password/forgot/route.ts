@@ -3,12 +3,12 @@ import { NextResponse } from 'next/server';
 import { sendMail } from '@/lib/mailer';
 import { createPasswordResetToken, RESET_TOKEN_TTL_MINUTES } from '@/lib/password-reset';
 import { prisma } from '@/lib/prisma';
-import { isValidStudentNumber, studentEmailFromNumber } from '@/lib/student-email';
+import { accountEmailFromIdentifier, isEmailAddress } from '@/lib/student-email';
 
 // The same response is returned whether or not the account exists, so this
 // endpoint cannot be used to discover which student numbers are registered.
 const GENERIC_RESPONSE = {
-  message: 'If an account exists for that student number, a password reset link has been sent to its TUT email address.',
+  message: 'If an account exists for those details, a password reset link has been sent to its email address.',
 };
 
 function appUrl(request: Request) {
@@ -23,13 +23,17 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Request body must be valid JSON.' }, { status: 400 });
   }
 
-  const studentNumber = (body as { studentNumber?: unknown } | null)?.studentNumber;
-  if (typeof studentNumber !== 'string' || !isValidStudentNumber(studentNumber)) {
-    return NextResponse.json({ error: 'Enter a valid student number.' }, { status: 400 });
+  const identifier = (body as { studentNumber?: unknown } | null)?.studentNumber;
+  const email = typeof identifier === 'string' ? accountEmailFromIdentifier(identifier, true) : null;
+  if (typeof identifier !== 'string' || !email) {
+    return NextResponse.json({ error: 'Enter a valid student number or admin email.' }, { status: 400 });
   }
 
-  const user = await prisma.user.findUnique({ where: { email: studentEmailFromNumber(studentNumber) } });
-  if (!user) return NextResponse.json(GENERIC_RESPONSE);
+  const user = await prisma.user.findUnique({ where: { email } });
+  // Email addresses are only accepted for admin accounts; students use their student number.
+  if (!user || (isEmailAddress(identifier) && user.role !== 'ADMIN')) {
+    return NextResponse.json(GENERIC_RESPONSE);
+  }
 
   const token = await createPasswordResetToken(user.id);
   if (!token) return NextResponse.json(GENERIC_RESPONSE);

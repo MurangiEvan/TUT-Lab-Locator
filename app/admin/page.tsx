@@ -73,7 +73,7 @@ export default async function AdminDashboardPage() {
         items.length === 0 ? null : (
           <section key={province}>
             <h2 className="mb-3 text-lg font-semibold">{province}</h2>
-            <div className="grid gap-4 lg:grid-cols-2">
+            <div className="grid items-start gap-4 lg:grid-cols-2">
               {items.map((campus) => (
                 <article
                   key={campus.id}
